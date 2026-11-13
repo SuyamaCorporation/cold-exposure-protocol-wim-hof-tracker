@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>コールドエクスポージャー・ウィムホフ習慣トラッカー</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-950 to-cyan-900 min-h-screen text-white">
+<div class="max-w-2xl mx-auto px-4 py-6">
+  <h1 class="text-2xl font-bold mb-1">コールドエクスポージャー・トラッカー</h1>
+  <p class="text-blue-200 text-sm mb-6">冷水シャワー・冷水浴の記録と習慣化サポート</p>
+
+  <div class="bg-white/10 backdrop-blur rounded-xl p-5 mb-5">
+    <h2 class="font-semibold text-cyan-200 mb-4">今日のセッションを記録</h2>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label for="sessionDate" class="block text-xs text-blue-300 mb-1">日付</label>
+        <input type="date" id="sessionDate" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+      </div>
+      <div>
+        <label for="sessionType" class="block text-xs text-blue-300 mb-1">種別</label>
+        <select id="sessionType" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+          <option value="shower">冷水シャワー</option>
+          <option value="bath">冷水浴</option>
+          <option value="ice_bath">アイスバス</option>
+        </select>
+      </div>
+      <div>
+        <label for="tempInput" class="block text-xs text-blue-300 mb-1">水温 (°C)</label>
+        <input type="number" id="tempInput" min="0" max="25" step="0.5" placeholder="例: 15" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+      </div>
+      <div>
+        <label for="durationInput" class="block text-xs text-blue-300 mb-1">時間 (秒)</label>
+        <input type="number" id="durationInput" min="5" max="1800" placeholder="例: 120" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+      </div>
+      <div>
+        <label for="breathSets" class="block text-xs text-blue-300 mb-1">呼吸法セット数</label>
+        <input type="number" id="breathSets" min="0" max="10" placeholder="例: 3" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+      </div>
+      <div>
+        <label for="moodScore" class="block text-xs text-blue-300 mb-1">体感スコア (1〜5)</label>
+        <select id="moodScore" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+          <option value="1">1 - きつかった</option>
+          <option value="2">2 - 大変だった</option>
+          <option value="3" selected>3 - 普通</option>
+          <option value="4">4 - 爽快だった</option>
+          <option value="5">5 - 最高だった</option>
+        </select>
+      </div>
+    </div>
+    <div class="mb-4">
+      <label for="memoInput" class="block text-xs text-blue-300 mb-1">体感メモ（任意）</label>
+      <textarea id="memoInput" rows="2" maxlength="200" placeholder="例: 最初の30秒が特に辛かったが後半は慣れてきた" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 resize-none"></textarea>
+    </div>
+    <button id="addBtn" aria-label="記録を追加" class="w-full bg-cyan-500 hover:bg-cyan-400 text-white font-semibold py-2.5 rounded-lg transition">記録する</button>
+  </div>
+
+  <div class="grid grid-cols-3 gap-3 mb-5">
+    <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+      <div class="text-2xl font-bold text-cyan-300" id="totalSessions">0</div>
+      <div class="text-xs text-blue-300 mt-1">累計セッション</div>
+    </div>
+    <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+      <div class="text-2xl font-bold text-orange-300" id="streakDays">0</div>
+      <div class="text-xs text-blue-300 mt-1">連続日数🔥</div>
+    </div>
+    <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+      <div class="text-2xl font-bold text-yellow-300" id="bestScore">-</div>
+      <div class="text-xs text-blue-300 mt-1">最高チャレンジスコア</div>
+    </div>
+  </div>
+
+  <div class="bg-white/10 backdrop-blur rounded-xl p-4 mb-5">
+    <h2 class="font-semibold text-cyan-200 mb-3">週次チャレンジスコア</h2>
+    <canvas id="weekChart" width="560" height="120" class="w-full"></canvas>
+    <p class="text-xs text-blue-300 mt-2">スコア = (25 - 水温) × 時間(秒) × (呼吸セット + 1) / 100</p>
+  </div>
+
+  <div class="bg-white/10 backdrop-blur rounded-xl p-4">
+    <h2 class="font-semibold text-cyan-200 mb-3">記録履歴</h2>
+    <div id="historyList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+  </div>
+</div>
+
+<script>
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+const KEY = 'app_cold-exposure-protocol-wim-hof-tracker';
+
+function calcScore(temp, duration, breath) {
+  return Math.round((25 - Math.min(temp, 24)) * duration * (breath + 1) / 100);
+}
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e) { return []; }
+}
+
+function saveData(data) {
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+function calcStreak(data) {
+  if (data.length === 0) return 0;
+  const dates = [...new Set(data.map(d => d.date))].sort().reverse();
+  let streak = 0;
+  const today = new Date().toISOString().slice(0, 10);
+  let cur = today;
+  for (const d of dates) {
+    if (d === cur) {
+      streak++;
+      const dt = new Date(cur);
+      dt.setDate(dt.getDate() - 1);
+      cur = dt.toISOString().slice(0, 10);
+    } else break;
+  }
+  return streak;
+}
+
+const typeLabels = { shower: '冷水シャワー', bath: '冷水浴', ice_bath: 'アイスバス' };
+const moodLabels = { 1: '😣', 2: '😟', 3: '😐', 4: '😊', 5: '🤩' };
+
+function render() {
+  const data = loadData();
+  document.getElementById('totalSessions').textContent = data.length;
+  document.getElementById('streakDays').textContent = calcStreak(data);
+  const best = data.length > 0 ? Math.max(...data.map(d => d.score)) : '-';
+  document.getElementById('bestScore').textContent = best;
+
+  const list = document.getElementById('historyList');
+  if (data.length === 0) {
+    list.innerHTML = '<p class="text-blue-300 text-sm text-center py-4">記録がありません</p>';
+  } else {
+    const rows = [...data].reverse().slice(0, 20).map(d => {
+      const scoreColor = d.score >= 200 ? 'text-orange-300' : (d.score >= 100 ? 'text-yellow-300' : 'text-cyan-300');
+      return `<div class="flex items-center gap-2 bg-white/5 rounded-lg p-3 text-sm">
+        <span class="text-blue-300 text-xs w-20 shrink-0">${escapeHtml(d.date)}</span>
+        <span class="text-xs text-blue-200 w-20 shrink-0">${escapeHtml(typeLabels[d.type] || d.type)}</span>
+        <span class="text-xs text-white shrink-0">${escapeHtml(String(d.temp))}°C / ${escapeHtml(String(d.duration))}s</span>
+        <span class="ml-auto font-bold ${escapeHtml(scoreColor)}">${escapeHtml(String(d.score))}</span>
+        <span class="text-base">${escapeHtml(moodLabels[d.mood] || '')}</span>
+      </div>`;
+    }).join('');
+    list.innerHTML = rows; // xss-ok: rows built with escapeHtml() on all user data
+  }
+
+  drawChart(data);
+}
+
+function drawChart(data) {
+  const canvas = document.getElementById('weekChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+
+  const scores = days.map(d => {
+    const recs = data.filter(r => r.date === d);
+    return recs.length > 0 ? Math.max(...recs.map(r => r.score)) : 0;
+  });
+
+  const maxScore = Math.max(...scores, 1);
+  const pad = { l: 10, r: 10, t: 15, b: 25 };
+  const cw = W - pad.l - pad.r;
+  const ch = H - pad.t - pad.b;
+  const bw = cw / 7 * 0.6;
+
+  scores.forEach((s, i) => {
+    const bh = s / maxScore * ch;
+    const x = pad.l + (i + 0.2) * (cw / 7);
+    const y = pad.t + ch - bh;
+
+    const grad = ctx.createLinearGradient(0, y, 0, pad.t + ch);
+    grad.addColorStop(0, '#22d3ee');
+    grad.addColorStop(1, '#0e7490');
+    ctx.fillStyle = s > 0 ? grad : 'rgba(255,255,255,0.1)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, bw, bh, 3);
+    ctx.fill();
+
+    ctx.fillStyle = '#93c5fd';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    const dayLabel = ['日','月','火','水','木','金','土'][new Date(days[i]).getDay()];
+    ctx.fillText(dayLabel, x + bw / 2, H - 5);
+    if (s > 0) {
+      ctx.fillStyle = '#e0f2fe';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText(s, x + bw / 2, y - 3);
+    }
+  });
+}
+
+document.getElementById('addBtn').addEventListener('click', function() {
+  const date = document.getElementById('sessionDate').value;
+  const type = document.getElementById('sessionType').value;
+  const temp = parseFloat(document.getElementById('tempInput').value);
+  const duration = parseInt(document.getElementById('durationInput').value);
+  const breath = parseInt(document.getElementById('breathSets').value) || 0;
+  const mood = parseInt(document.getElementById('moodScore').value);
+  const memo = document.getElementById('memoInput').value.trim().slice(0, 200);
+
+  if (!date || isNaN(temp) || isNaN(duration)) {
+    alert('日付・水温・時間を入力してください');
+    return;
+  }
+  if (temp < 0 || temp > 25) { alert('水温は0〜25°Cで入力してください'); return; }
+  if (duration < 5 || duration > 1800) { alert('時間は5〜1800秒で入力してください'); return; }
+
+  const score = calcScore(temp, duration, breath);
+  const data = loadData();
+  data.push({ date, type, temp, duration, breath, mood, memo, score, ts: Date.now() });
+  saveData(data);
+
+  document.getElementById('tempInput').value = '';
+  document.getElementById('durationInput').value = '';
+  document.getElementById('breathSets').value = '';
+  document.getElementById('memoInput').value = '';
+  document.getElementById('moodScore').value = '3';
+  render();
+});
+
+const today = new Date().toISOString().slice(0, 10);
+document.getElementById('sessionDate').value = today;
+render();
+</script>
+</body>
+</html>
